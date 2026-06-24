@@ -74,7 +74,8 @@ ensure_cert() {
     fi
     echo "🔑 未发现证书，使用 openssl 生成自签证书（prime256v1）..."
     openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
-        -days 3650 -keyout "$KEY_FILE" -out "$CERT_FILE" -subj "/CN=${SNI}"
+    -days 3650 -keyout "$KEY_FILE" -out "$CERT_FILE" -subj "/CN=${SNI}" \
+    -addext "subjectAltName=DNS:${SNI}"
     echo "✅ 证书生成成功。"
 }
 
