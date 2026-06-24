@@ -7,7 +7,7 @@ set -e
 # ---------- 默认配置 ----------
 HYSTERIA_VERSION="v2.6.5"
 DEFAULT_PORT=22222
-AUTH_PASSWORD="***"
+AUTH_PASSWORD="WDmCVDKAYxWWmDjxqE3n"
 CERT_FILE="cert.pem"
 KEY_FILE="key.pem"
 SNI="www.bing.com"
