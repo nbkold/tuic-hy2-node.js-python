@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-# Hysteria2 极简部署脚本（支持命令行端口参数 + 默认跳过证书验证）
+# Hysteria2 极简部署脚本（支持命令行端口参数 + 证书指纹 pinSha256 验证）
 # 适用于超低内存环境（32-64MB）
+# v2rayNG 兼容版：使用 pinSha256 替代已废弃的 insecure=1
 
 set -e
 
 # ---------- 默认配置 ----------
 HYSTERIA_VERSION="v2.6.5"
 DEFAULT_PORT=22222         # 自适应端口
-AUTH_PASSWORD="ieshare2025"   # 建议修改为复杂密码
+AUTH_PASSWORD="***"   # 建议修改为复杂密码
 CERT_FILE="cert.pem"
 KEY_FILE="key.pem"
 SNI="www.bing.com"
@@ -18,6 +19,7 @@ ALPN="h3"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "Hysteria2 极简部署脚本（Shell 版）"
 echo "支持命令行端口参数，如：bash hysteria2.sh 443"
+echo "证书指纹 (pinSha256) 版 —— 兼容 v2rayNG 2026 新规"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
 # ---------- 获取端口 ----------
@@ -76,6 +78,11 @@ ensure_cert() {
     echo "✅ 证书生成成功。"
 }
 
+# ---------- 计算证书指纹 (pinSha256) ----------
+calc_pinsha256() {
+    openssl x509 -in "$CERT_FILE" -outform der | openssl dgst -sha256 -binary | base64
+}
+
 # ---------- 写配置文件 ----------
 write_config() {
 cat > server.yaml <<EOF
@@ -111,15 +118,18 @@ get_server_ip() {
 # ---------- 打印连接信息 ----------
 print_connection_info() {
     local IP="$1"
-    echo "🎉 Hysteria2 部署成功！（极简优化版）"
+    local FINGERPRINT
+    FINGERPRINT=$(calc_pinsha256)
+    echo "🎉 Hysteria2 部署成功！（证书指纹版）"
     echo "=========================================================================="
     echo "📋 服务器信息:"
     echo "   🌐 IP地址: $IP"
     echo "   🔌 端口: $SERVER_PORT"
     echo "   🔑 密码: $AUTH_PASSWORD"
+    echo "   🔐 证书指纹 (pinSha256): $FINGERPRINT"
     echo ""
-    echo "📱 节点链接（SNI=${SNI}, ALPN=${ALPN}, 跳过证书验证）:"
-    echo "hysteria2://${AUTH_PASSWORD}@${IP}:${SERVER_PORT}?sni=${SNI}&alpn=${ALPN}&insecure=1#Hy2-Bing"
+    echo "📱 节点链接（SNI=${SNI}, ALPN=${ALPN}, pinSha256 验证）:"
+    echo "hysteria2://${AUTH_PASSWORD}@${IP}:${SERVER_PORT}?sni=${SNI}&alpn=${ALPN}&pinSha256=${FINGERPRINT}#Hy2-Bing"
     echo ""
     echo "📄 客户端配置文件:"
     echo "server: ${IP}:${SERVER_PORT}"
@@ -127,12 +137,13 @@ print_connection_info() {
     echo "tls:"
     echo "  sni: ${SNI}"
     echo "  alpn: [\"${ALPN}\"]"
-    echo "  insecure: true"
+    echo "  pinSha256: ${FINGERPRINT}"
     echo "socks5:"
     echo "  listen: 127.0.0.1:1080"
     echo "http:"
     echo "  listen: 127.0.0.1:8080"
     echo "=========================================================================="
+    echo "💡 将此链接或配置导入 v2rayNG 即可，不再弹出 insecure 警告。"
 }
 
 # ---------- 主逻辑 ----------
@@ -147,7 +158,3 @@ main() {
 }
 
 main "$@"
-
-
-
-
